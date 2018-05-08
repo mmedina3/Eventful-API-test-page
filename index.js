@@ -1,6 +1,7 @@
 const connection = require('./connection');
 const app = require('./app');
 
+
 const mySqlConnect = () => {
   connection.connect((err) =>{
     if (err) throw err;

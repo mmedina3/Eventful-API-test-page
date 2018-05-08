@@ -1,4 +1,5 @@
 const inquirer = require('inquirer');
+const connection = require('./connection');
 
 const app = {};
 app.startQuestion = (closeConnectionCallback) => {
@@ -32,59 +33,41 @@ app.startQuestion = (closeConnectionCallback) => {
 }
 
 app.completeSentence = (continueCallback) => {
-  //YOUR WORK HERE
-
-  inquirer.prompt({
+  inquirer.prompt([{
     type: 'input',
     message: 'What\'s your favorite color ?',
-    name: 'action'
-  }).then((res) => {
-    var color = res.action;
-
-    inquirer.prompt({
+    name: 'color'
+  }, {
       type: 'input',
       message: 'What\'s your favorite item ?',
-      name: 'action'
-    }).then((res)=> {
-      console.log(color, res.action);
+      name: 'item'
+    }]).then((res)=> {
+      console.log('My favorite color is ' + res.color + ' , so my dream is to buy a ' + res.color + res.item + '.');
     }).then(continueCallback);
-  })
-  
-
-  //End of your work
-  //continueCallback();
 }
 
 app.createNewUser = (continueCallback) => {
-  //YOUR WORK HERE
-  inquirer.prompt({
+  inquirer.prompt([{
     type: 'input',
     message: 'What\'s your name?',
-    name: 'action'
-  }). then((res) => {
-    var name = res.action;
-
-    inquirer.prompt({
+    name: 'name'
+  }, {
       type: 'input',
       message: 'How old are you?',
-      name: 'action'
-    }).then((res) => {
-      var age = res.action;
-
-      inquirer.prompt({
+      name: 'age'
+    }, {
         type: 'input',
         message: 'What\'s your gender?',
-        name: 'action'
-      }).then((res)=> {
-        console.log(name, age, res.action);
+        name: 'gender'
+      }]).then((res)=> {
+        var post = {name: res.name, age: res.age, gender: res.gender};
+        connection.query('INSERT INTO Users SET ?', post, (err, results, fields) => {
+          if(err){
+            throw err;
+          }
+        })
       }).then(continueCallback);
-    })
-  })
 }
-
- // console.log('Please write code for this function');
- //End of your work
- // continueCallback();
 
 app.searchEventful = (continueCallback) => {
   //YOUR WORK HERE
@@ -119,4 +102,3 @@ app.seeUsersOfOneEvent = (continueCallback) => {
 }
 
 module.exports = app;
-

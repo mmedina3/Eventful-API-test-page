@@ -1,5 +1,6 @@
 const connection = require('./connection');
 const app = require('./app');
+const eventfulAPI = require('./eventfulAPI.js');
 
 const mySqlConnect = () => {
   connection.connect((err) =>{

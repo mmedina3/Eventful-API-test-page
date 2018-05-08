@@ -72,7 +72,9 @@ app.createNewUser = (continueCallback) => {
 app.searchEventful = (continueCallback) => {
   //YOUR WORK HERE
 
-  console.log('Please write code for this function');
+
+
+  //console.log('Please write code for this function');
   //End of your work
   continueCallback();
 }

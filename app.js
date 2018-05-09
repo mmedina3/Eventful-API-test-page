@@ -76,10 +76,29 @@ app.searchEventful = (continueCallback) => {
     message: 'What kind of event?',
     name: 'event'
   }).then((res) => {
-    findEvents(res.event);
-  })
-  // .then(continueCallback);
-}
+    findEvents(res.event, (eventList) => {
+      inquirer.prompt({
+        type: 'confirm',
+        message: 'Would you like to save this event to the database?',
+        name: "answer",
+        default: false
+      }).then((res) => {
+        if(res.answer === true) {
+          var post = eventList;
+          connection.query("INSERT INTO Events SET ?", post, (err, results, fields) => {
+            if(err) {
+              throw err;
+            }
+          })
+          continueCallback();
+        } else {
+          app.searchEventful(continueCallback);
+        }
+      });
+    })
+   })
+  }
+  
 
 app.matchUserWithEvent = (continueCallback) => {
   //YOUR WORK HERE

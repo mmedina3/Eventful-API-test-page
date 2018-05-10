@@ -101,11 +101,22 @@ app.searchEventful = (continueCallback) => {
   
 
 app.matchUserWithEvent = (continueCallback) => {
-  //YOUR WORK HERE
-
-  console.log('Please write code for this function');
-  //End of your work
-  continueCallback();
+  inquirer.prompt([{
+    type: 'input',
+    message: 'What\'s your user ID?',
+    name: 'user_id'
+  },{
+    type: 'input',
+    message: 'What event would you like to attend?',
+    name: 'event_id'
+  }]).then((res) => {
+      var post = { user_id: res.user_id, event_id: res.event_id };
+      connection.query('INSERT INTO Users_Events SET ?', post, (err, results, fields) => {
+        if (err) {
+          throw err;
+        }
+      })
+    }).then(continueCallback);
 }
 
 app.seeEventsOfOneUser = (continueCallback) => {

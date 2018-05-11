@@ -54,14 +54,14 @@ app.createNewUser = (continueCallback) => {
     name: 'name'
   }, {
       type: 'input',
-      message: 'How old are you?',
-      name: 'age'
+      message: 'What\s your email?',
+      name: 'email'
     }, {
         type: 'input',
-        message: 'What\'s your gender?',
-        name: 'gender'
+        message: 'What\'s your age?',
+        name: 'age'
       }]).then((res)=> {
-        var post = {name: res.name, age: res.age, gender: res.gender};
+        var post = {name: res.name, age: res.age, email: res.email};
         connection.query('INSERT INTO Users SET ?', post, (err, results, fields) => {
           if(err){
             throw err;
@@ -101,31 +101,96 @@ app.searchEventful = (continueCallback) => {
   
 
 app.matchUserWithEvent = (continueCallback) => {
-  inquirer.prompt([{
-    type: 'input',
-    message: 'What\'s your user ID?',
-    name: 'user_id'
-  },{
-    type: 'input',
-    message: 'What event would you like to attend?',
-    name: 'event_id'
-  }]).then((res) => {
-      var post = { user_id: res.user_id, event_id: res.event_id };
-      connection.query('INSERT INTO Users_Events SET ?', post, (err, results, fields) => {
-        if (err) {
-          throw err;
+  let userArrayList = [];
+  let eventArrayList = [];
+  connection.query('SELECT * FROM Users', function (err, results, field) {
+    let userList = JSON.parse(JSON.stringify(results));
+    
+    for(let i=0; i<userList.length; i++) {
+      userArrayList.push(`${userList[i].user_id} || ${userList[i].email}`);
+    }
+    inquirer.prompt({
+      type: 'list',
+      name: 'uID',
+      message: 'Please select your username',
+      choices: userArrayList
+    }).then((res) => {
+      let grabUserID = res.uID.split('||');
+      let userID = grabUserID[0];
+
+      connection.query('SELECT * FROM Events', function(err, results, fields) {
+        let eventsList = JSON.parse(JSON.stringify(results));
+        
+        for(let i=0; i<eventsList.length; i++){
+          eventArrayList.push(`${eventsList[i].event_id} || ${eventsList[i].title}`)
         }
+        inquirer.prompt({
+          type: 'list',
+          name: 'eID',
+          message: "Which event would you like to attend?",
+          choices: eventArrayList
+        }).then((res) => {
+          let grabEventID = res.eID.split('||');
+          let eventID = grabEventID[0];
+          
+          let combineUserAndEvent = {uID: userID, eID: eventID};
+          connection.query(`INSERT INTO Users_Events SET ? `, combineUserAndEvent, function(err, results, fields){
+            if(err) throw err;
+            console.log(`You are going to ${grabEventID[1]}!`);
+            continueCallback();
+          })
+        })
       })
-    }).then(continueCallback);
+    })
+  })
 }
+
 
 app.seeEventsOfOneUser = (continueCallback) => {
-  //YOUR WORK HERE
+  let newArr = [];
+  connection.query('SELECT user_id, email FROM Users', (err, rows) => {
+    for (let i = 0; i < rows.length; i++) {
+      newArr.push(`${rows[i].user_id} || ${rows[i].email}`)
+    }
+    inquirer.prompt({
+      type: 'list',
+      message: 'Which users event do you want to see?',
+      name: 'user',
+      choices: newArr
+    }).then((res) => {
+      console.log('You are searching user ' + res.user);
+      const userArr = res.user.split(' || ');
+      const userId = userArr[0];
+      const userName = userArr[1];
 
-  console.log('Please write code for this function');
-  //End of your work
-  continueCallback();
+      const eventQuery = 'SELECT * FROM Events JOIN Users_Events ON Events.event_id = Users_Events.eID WHERE Users_Events.uID = ?';
+
+      connection.query(eventQuery, userId, function (err, result, fields) {
+        if (err) throw err;
+
+        if (result.length === 0) {
+          console.log('No event found for ' + userName + '. Please try another user.');
+          app.seeEventsOfOneUser(continueCallback);
+        }
+        else {
+          console.log(userName + ' is going to the following event(s):');
+
+          result.forEach(obj => {
+            console.log(" -------------------------------------------------------- ");
+            console.log('Name: ', obj.title);
+            console.log('Venue: ', obj.venue);
+            console.log('Address: ', obj.address);
+          });
+
+          continueCallback();
+        }
+      });
+    }).catch(err => {
+      console.log(err);
+    })
+  })
 }
+
 
 app.seeUsersOfOneEvent = (continueCallback) => {
   //YOUR WORK HERE

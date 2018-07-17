@@ -2,6 +2,7 @@ const inquirer = require('inquirer');
 const connection = require('./connection');
 const findEvents = require('./eventfulAPI.js');
 
+
 const app = {};
 app.startQuestion = (closeConnectionCallback) => {
   inquirer.prompt({
@@ -54,7 +55,7 @@ app.createNewUser = (continueCallback) => {
     name: 'name'
   }, {
       type: 'input',
-      message: 'What\s your email?',
+      message: 'What\'s your email?',
       name: 'email'
     }, {
         type: 'input',
@@ -100,80 +101,80 @@ app.searchEventful = (continueCallback) => {
   }
   
 
-app.matchUserWithEvent = (continueCallback) => {
-  let userArrayList = [];
-  let eventArrayList = [];
-  connection.query('SELECT * FROM Users', function (err, results, field) {
-    let userList = JSON.parse(JSON.stringify(results));
-    
-    for(let i=0; i<userList.length; i++) {
-      userArrayList.push(`${userList[i].user_id} || ${userList[i].email}`);
-    }
-    inquirer.prompt({
-      type: 'list',
-      name: 'uID',
-      message: 'Please select your username',
-      choices: userArrayList
-    }).then((res) => {
-      let grabUserID = res.uID.split('||');
-      let userID = grabUserID[0];
-
-      connection.query('SELECT * FROM Events', function(err, results, fields) {
-        let eventsList = JSON.parse(JSON.stringify(results));
-        
-        for(let i=0; i<eventsList.length; i++){
-          eventArrayList.push(`${eventsList[i].event_id} || ${eventsList[i].title}`)
-        }
-        inquirer.prompt({
-          type: 'list',
-          name: 'eID',
-          message: "Which event would you like to attend?",
-          choices: eventArrayList
-        }).then((res) => {
-          let grabEventID = res.eID.split('||');
-          let eventID = grabEventID[0];
+  app.matchUserWithEvent = (continueCallback) => {
+    let userArrayList = [];
+    let eventArrayList = [];
+    connection.query('SELECT * FROM Users', function (err, results, fields) {
+      let userList = JSON.parse(JSON.stringify(results));
+      
+      for(let i=0; i<userList.length; i++) {
+        userArrayList.push(`${userList[i].user_id} || ${userList[i].email}`);
+      }
+      inquirer.prompt({
+        type: 'list',
+        name: 'uID',
+        message: 'Which email would you like to selecT?',
+        choices: userArrayList
+      }).then((res) => {
+        let grabUserID = res.uID.split('||');
+        let userID = grabUserID[0];
+  
+        connection.query('SELECT * FROM Events', function(err, results, fields) {
+          let eventsList = JSON.parse(JSON.stringify(results));
           
-          let combineUserAndEvent = {uID: userID, eID: eventID};
-          connection.query(`INSERT INTO Users_Events SET ? `, combineUserAndEvent, function(err, results, fields){
-            if(err) throw err;
-            console.log(`You are going to ${grabEventID[1]}!`);
-            continueCallback();
+          for(let i=0; i<eventsList.length; i++){
+            eventArrayList.push(`${eventsList[i].event_id} || ${eventsList[i].title}`)
+          }
+          inquirer.prompt({
+            type: 'list',
+            name: 'eID',
+            message: "Which event would you like to attend?",
+            choices: eventArrayList
+          }).then((res) => {
+            let grabEventID = res.eID.split('||');
+            let eventID = grabEventID[0];
+            
+            let combineUserAndEvent = {user__id: userID, event__id: eventID};
+            connection.query('INSERT INTO Users_Events SET ?', combineUserAndEvent, function(err, results, fields){
+              if(err) throw err;
+              console.log(`You are going to ${grabEventID[1]}!`);
+              continueCallback();
+            })
           })
         })
       })
     })
-  })
-}
+  }
 
 
-app.seeEventsOfOneUser = (continueCallback) => {
-  let newArr = [];
-  connection.query('SELECT user_id, email FROM Users', (err, rows) => {
-    for (let i = 0; i < rows.length; i++) {
-      newArr.push(`${rows[i].user_id} || ${rows[i].email}`)
-    }
+  app.seeEventsOfOneUser = (continueCallback) => {
+    let newArr = [];
+    connection.query('SELECT user_id, email FROM Users', (err, rows)=>{
+      for(let i=0; i<rows.length; i++){
+        newArr.push(`${rows[i].user_id} || ${rows[i].email}`)
+      }
     inquirer.prompt({
       type: 'list',
       message: 'Which users event do you want to see?',
       name: 'user',
       choices: newArr
-    }).then((res) => {
+      }).then((res) => {
       console.log('You are searching user ' + res.user);
-      const userArr = res.user.split(' || ');
+      const userArr = res.user.split( ' || ');
       const userId = userArr[0];
-      const userName = userArr[1];
+      const userEmail = userArr[1];
 
-      const eventQuery = 'SELECT * FROM Events JOIN Users_Events ON Events.event_id = Users_Events.eID WHERE Users_Events.uID = ?';
+      const eventQuery = 'SELECT * FROM Events JOIN Users_Events ON Events.event_id = Users_Events.event__id WHERE Users_Events.user__id = ?';
 
-      connection.query(eventQuery, userId, function (err, result, fields) {
+      connection.query(eventQuery, userId, function(err, result, fields) {
         if (err) throw err;
 
         if (result.length === 0) {
-          console.log('No event found for ' + userName + '. Please try another user.');
+          console.log('No event found for ' + userEmail + '. Please try another user.');
           app.seeEventsOfOneUser(continueCallback);
         }
         else {
-          console.log(userName + ' is going to the following event(s):');
+          console.log(userEmail + ' is going to the following event(s):');
 
           result.forEach(obj => {
             console.log(" -------------------------------------------------------- ");
@@ -181,9 +182,8 @@ app.seeEventsOfOneUser = (continueCallback) => {
             console.log('Venue: ', obj.venue);
             console.log('Address: ', obj.address);
           });
-
           continueCallback();
-        }
+        }      
       });
     }).catch(err => {
       console.log(err);
@@ -193,49 +193,49 @@ app.seeEventsOfOneUser = (continueCallback) => {
 
 
 app.seeUsersOfOneEvent = (continueCallback) => {
+   
+  let newArr = [];
+  connection.query('SELECT event_id, title FROM Events', (err, rows)=>{
+    for(let i=0; i<rows.length; i++){
+      newArr.push(`${rows[i].event_id} || ${rows[i].title}`)
+    }
+  inquirer.prompt({
+    type: 'list',
+    message: 'Which event do you want to see the user for?',
+    name: 'event',
+    choices: newArr
+    }).then((res) => {
+    console.log('You are searching this event\'s users: ' + res.event);
+    const eventArr = res.event.split( ' || ');
+    const eventId = eventArr[0];
+    const eventName = eventArr[1];
 
-    let newArr = [];
-    connection.query('SELECT event_id, title FROM Events', (err, rows) => {
-        for (let i = 0; i < rows.length; i++) {
-            newArr.push(`${rows[i].event_id} || ${rows[i].title}`)
-        }
-        inquirer.prompt({
-            type: 'list',
-            message: 'Which event do you want to see the user for?',
-            name: 'event',
-            choices: newArr
-        }).then((res) => {
-            console.log('You are searching this event\'s users: ' + res.event);
-            const eventArr = res.event.split(' || ');
-            const eventId = eventArr[0];
-            const eventName = eventArr[1];
+    const eventQuery = 'select name, email from Users JOIN Users_Events ON Users_Events.user__id = Users.user_id WHERE Users_Events.event__id = ?';
 
-            const eventQuery = 'select name, email from Users JOIN Users_Events ON Users_Events.user__id = Users.user_id WHERE Users_Events.event__id = ?';
+    connection.query(eventQuery, eventId, function(err, result, fields) {
+      if (err) throw err;
 
-            connection.query(eventQuery, eventId, function (err, result, fields) {
-                if (err) throw err;
+      if (result.length === 0) {
+        console.log('No  users found for ' + eventName + '. Please try another event.');
+        app.seeUsersOfOneEvent(continueCallback);
+      }
+      else {
+        console.log(eventName + ' is being attended by the following person(s): ');
 
-                if (result.length === 0) {
-                    console.log('No  users found for ' + eventName + '. Please try another event.');
-                    app.seeUsersOfOneEvent(continueCallback);
-                }
-                else {
-                    console.log(eventName + ' is being attended by the following person(s): ');
-
-                    result.forEach(obj => {
-                        console.log(" -------------------------------------------------------- ");
-                        console.log('Email: ', obj.email);
-                        console.log('Name: ', obj.name);
-                        //console.log('Address: ', obj.address);
-                    });
-
-                    continueCallback();
-                }
-            });
-        }).catch(err => {
-            console.log(err);
-        })
-    })
+        result.forEach(obj => {
+          console.log(" -------------------------------------------------------- ");
+          console.log('Email: ', obj.email);
+          console.log('Name: ', obj.name);
+          //console.log('Address: ', obj.address);
+        });
+        
+        continueCallback();
+      }      
+    });
+  }).catch(err => {
+    console.log(err);
+  })
+})
 }
 
 module.exports = app;

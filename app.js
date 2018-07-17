@@ -193,11 +193,49 @@ app.seeEventsOfOneUser = (continueCallback) => {
 
 
 app.seeUsersOfOneEvent = (continueCallback) => {
-  //YOUR WORK HERE
 
-  console.log('Please write code for this function');
-  //End of your work
-  continueCallback();
+    let newArr = [];
+    connection.query('SELECT event_id, title FROM Events', (err, rows) => {
+        for (let i = 0; i < rows.length; i++) {
+            newArr.push(`${rows[i].event_id} || ${rows[i].title}`)
+        }
+        inquirer.prompt({
+            type: 'list',
+            message: 'Which event do you want to see the user for?',
+            name: 'event',
+            choices: newArr
+        }).then((res) => {
+            console.log('You are searching this event\'s users: ' + res.event);
+            const eventArr = res.event.split(' || ');
+            const eventId = eventArr[0];
+            const eventName = eventArr[1];
+
+            const eventQuery = 'select name, email from Users JOIN Users_Events ON Users_Events.user__id = Users.user_id WHERE Users_Events.event__id = ?';
+
+            connection.query(eventQuery, eventId, function (err, result, fields) {
+                if (err) throw err;
+
+                if (result.length === 0) {
+                    console.log('No  users found for ' + eventName + '. Please try another event.');
+                    app.seeUsersOfOneEvent(continueCallback);
+                }
+                else {
+                    console.log(eventName + ' is being attended by the following person(s): ');
+
+                    result.forEach(obj => {
+                        console.log(" -------------------------------------------------------- ");
+                        console.log('Email: ', obj.email);
+                        console.log('Name: ', obj.name);
+                        //console.log('Address: ', obj.address);
+                    });
+
+                    continueCallback();
+                }
+            });
+        }).catch(err => {
+            console.log(err);
+        })
+    })
 }
 
 module.exports = app;
